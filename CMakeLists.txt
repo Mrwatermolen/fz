@@ -11,7 +11,7 @@ if(PROJECT_SOURCE_DIR STREQUAL PROJECT_BINARY_DIR)
     message(FATAL_ERROR "In-source builds are not allowed")
 endif()
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -28,7 +28,17 @@ target_include_directories(fz INTERFACE
   $<INSTALL_INTERFACE:${FZ_PUBLIC_INCLUDE_DIR}>
 )
 
-add_subdirectory(test)
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_compile_definitions(fz INTERFACE FZ_DEBUG)
+endif()
+
+# test
+option(FZ_PACKAGE_TESTS "Build the tests" ON)
+if(FZ_PACKAGE_TESTS)
+    enable_testing()
+    include(GoogleTest)
+    add_subdirectory(test)
+endif()
 
 set(FZ_CMAKE_DIR ${CMAKE_CURRENT_BINARY_DIR}/cmake)
 

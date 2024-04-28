@@ -1,10 +1,12 @@
+#include <gtest/gtest.h>
+
 #include <iostream>
 #include <numeric>
 #include <ranges>
 
 #include "fz/array.hpp"
 
-auto main() -> int {
+TEST(Array, Basic) {
   using fz::Array;
 
   auto arr = Array<int>::empty({2, 3});
