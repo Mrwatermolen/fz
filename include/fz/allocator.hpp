@@ -7,6 +7,8 @@
 #include <new>
 #include <sstream>
 
+#include "fz/memory.hpp"
+
 namespace fz {
 
 #if FZ_DEBUG
@@ -91,21 +93,15 @@ class Allocator {
 template <typename T>
 auto Allocator<T>::fzAllocate(size_type n, T* hint) -> pointer {
   std::stringstream ss;
-  ss << "Allocating memory for " << n << " objects of type " << typeid(T).name()
-     << " at " << hint;
+  ss << "Allocating memory for " << n << " objects of type "
+     << typeid(T).name();
   FZ_DEBUG_PRINT(ss.str());
-  // https://en.cppreference.com/w/cpp/memory/new/set_new_handler
-  // replace the new-handler
   std::set_new_handler(nullptr);
-  auto p = ::operator new(n * sizeof(T));
-  if (p == nullptr) {
-    throw std::bad_alloc();
-  }
+  auto p = MallocAlloc::allocate(n);
 
   ss.str("");
   ss << "Memory allocated at " << p;
   FZ_DEBUG_PRINT(ss.str());
-  // return raw_pointer_cast<pointer>(p);
   return static_cast<pointer>(p);
 }
 
@@ -114,13 +110,16 @@ void Allocator<T>::fzDeallocate(pointer p) {
   std::stringstream ss;
   ss << "Deallocating memory at " << p;
   FZ_DEBUG_PRINT(ss.str());
-  ::operator delete(p);
+  MallocAlloc::deallocate(p);
 }
 
 template <typename T>
 template <typename... Args>
 void Allocator<T>::fzConstructAt(pointer p, Args&&... args) {
-  new (p) T(std::forward<Args>(args)...);
+  std::stringstream ss;
+  ss << "Constructing object at " << p;
+  FZ_DEBUG_PRINT(ss.str());
+  fz::construct(p, std::forward<Args>(args)...);
 }
 
 template <typename T>
@@ -128,7 +127,7 @@ void Allocator<T>::fzDestroy(pointer p) {
   std::stringstream ss;
   ss << "Destroying object at " << p;
   FZ_DEBUG_PRINT(ss.str());
-  p->~T();
+  fz::destroy(p);
 }
 
 template <typename T>
